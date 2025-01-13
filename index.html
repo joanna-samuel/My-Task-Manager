@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+        :root {
+            --background-light: #ffe6f2;
+            --background-dark: #343a40;
+            --text-light: #333;
+            --text-dark: #fff;
+            --primary-light: #ff99cc;
+            --primary-dark: #f06292;
+            --work-color: #ffb3d9;
+            --personal-color: #d9b3ff;
+            --shopping-color: #ffcc99;
+        }
+        body.light {
+            background-color: var(--background-light);
+            color: var(--text-light);
+        }
+        body.dark {
+            background-color: var(--background-dark);
+            color: var(--text-dark);
+        }
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            font-family: 'Cursive', sans-serif;
+            color: var(--primary-light);
+        }
+        .quote {
+            font-style: italic;
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary-dark);
+        }
+        .task-input, .search-bar {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="date"], select {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px;
+            background-color: var(--primary-light);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        .theme-toggle {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .task-list {
+            list-style: none;
+            padding: 0;
+        }
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .task-item.work {
+            background-color: var(--work-color);
+        }
+        .task-item.personal {
+            background-color: var(--personal-color);
+        }
+        .task-item.shopping {
+            background-color: var(--shopping-color);
+        }
+        .task-item.completed span {
+            text-decoration: line-through;
+            color: gray;
+        }
+        .priority {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .actions button {
+            margin-left: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="light">
+    <div class="container">
+        <h1>✨ My Task Manager ✨</h1>
+        <div class="quote" id="quote">
+            "Dream big, work hard, and make it happen!"
+        </div>
+        <div class="theme-toggle">
+            <button onclick="toggleTheme()">Toggle Light/Dark Theme</button>
+        </div>
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search tasks..." onkeyup="searchTasks()">
+        </div>
+        <div class="task-input">
+            <input type="text" id="task-input" placeholder="Enter a new task...">
+            <select id="category-input">
+                <option value="Work">Work</option>
+                <option value="Personal">Personal</option>
+                <option value="Shopping">Shopping</option>
+            </select>
+            <select id="priority-input">
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+            <input type="date" id="deadline-input">
+            <button onclick="addTask()">Add Task</button>
+        </div>
+        <ul class="task-list" id="task-list">
+            <!-- Tasks will appear here -->
+        </ul>
+    </div>
+
+    <script>
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        const quotes = [
+            "Dream big, work hard, and make it happen!",
+            "You are capable of amazing things!",
+            "Keep going, you're closer than you think.",
+            "Don't wait for opportunity, create it!",
+            "Success is built on consistency, not perfection."
+        ];
+
+        function showRandomQuote() {
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            document.getElementById('quote').textContent = quotes[randomIndex];
+        }
+
+        function addTask() {
+            const taskInput = document.getElementById('task-input');
+            const categoryInput = document.getElementById('category-input');
+            const priorityInput = document.getElementById('priority-input');
+            const deadlineInput = document.getElementById('deadline-input');
+
+            const taskDescription = taskInput.value.trim();
+            const category = categoryInput.value;
+            const priority = priorityInput.value;
+            const deadline = deadlineInput.value;
+
+            if (taskDescription === '') {
+                alert('Task description cannot be empty.');
+                return;
+            }
+
+            const newTask = { description: taskDescription, category, priority, deadline, completed: false };
+            tasks.push(newTask);
+            taskInput.value = '';
+            deadlineInput.value = '';
+            saveTasks();
+            renderTasks();
+        }
+
+        function renderTasks(filteredTasks = tasks) {
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = '';
+            filteredTasks.forEach((task, index) => {
+                const taskItem = document.createElement('li');
+                taskItem.className = `task-item ${task.category.toLowerCase()} ${task.completed ? 'completed' : ''}`;
+                taskItem.innerHTML = `
+                    <span>
+                        <span class="priority">${task.priority}</span>
+                        ${task.description} (${task.category})
+                        ${task.deadline ? `- Due: ${task.deadline}` : ''}
+                    </span>
+                    <div class="actions">
+                        <button onclick="toggleComplete(${index})">
+                            ${task.completed ? 'Undo' : 'Complete'}
+                        </button>
+                        <button onclick="deleteTask(${index})">Delete</button>
+                    </div>
+                `;
+                taskList.appendChild(taskItem);
+            });
+        }
+
+        function toggleComplete(index) {
+            tasks[index].completed = !tasks[index].completed;
+            saveTasks();
+            renderTasks();
+        }
+
+        function deleteTask(index) {
+            tasks.splice(index, 1);
+            saveTasks();
+            renderTasks();
+        }
+
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        function searchTasks() {
+            const searchInput = document.getElementById('search-input').value.toLowerCase();
+            const filteredTasks = tasks.filter(task => task.description.toLowerCase().includes(searchInput));
+            renderTasks(filteredTasks);
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+        }
+
+        // Initial render and setup
+        renderTasks();
+        showRandomQuote();
+    </script>
+</body>
+</html>
+
+
